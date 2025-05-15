@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-white text-black">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cosmophysical Theorist Database</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #aaa; border-radius: 3px; }
+    .highlighted { background-color: #d1d5db; }
+  </style>
+</head>
+
+<body class="font-sans">
+<!-- Login Screen -->
+<div id="login-screen" class="flex items-center justify-center h-screen">
+  <div class="bg-gray-100 p-8 rounded-xl border border-black shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Cosmophysical Theorist Login</h2>
+    <input id="login-input" type="password" placeholder="Enter Password" class="w-full p-2 border border-black rounded mb-4" />
+    <button id="login-button" class="w-full bg-black text-white p-2 rounded hover:bg-gray-800">Login</button>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="main-app" class="hidden">
+  <header class="text-center p-6 border-b border-black bg-gray-50">
+    <h1 class="text-3xl md:text-4xl font-bold tracking-wide">Cosmophysical Database Viewer</h1>
+    <p class="text-md text-gray-700">Use ↑ ↓ to navigate, Enter to view, R to regenerate universe</p>
+    <button onclick="regenerateUniverse()" class="mt-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800">
+      Generate New Universe
+    </button>
+  </header>
+
+  <main class="p-4 grid md:grid-cols-2 gap-4">
+    <!-- Galactic Object Viewer -->
+    <section class="border border-black rounded-xl p-4 overflow-y-auto max-h-[80vh] bg-white">
+      <h2 class="text-xl font-semibold mb-2">Galactic Objects</h2>
+      <table class="w-full text-left table-auto border border-black">
+        <thead class="bg-black text-white">
+          <tr>
+            <th class="p-2 border-r border-white">Name</th>
+            <th class="p-2 border-r border-white">Type</th>
+            <th class="p-2">Coords</th>
+          </tr>
+        </thead>
+        <tbody id="object-table" class="text-black"></tbody>
+      </table>
+    </section>
+
+    <!-- Details and Databases -->
+    <section class="space-y-4">
+      <div class="bg-gray-100 rounded-xl p-4 border border-black">
+        <h2 class="text-2xl font-semibold mb-4">Object Details</h2>
+        <div id="detail-view" class="text-gray-800">Use arrow keys or mouse to explore objects.</div>
+      </div>
+
+      <div class="bg-gray-100 rounded-xl p-4 border border-black">
+        <h2 class="text-2xl font-semibold mb-2">Materials Database</h2>
+        <input id="material-input" type="text" placeholder="Add material..." class="w-full p-2 border border-black rounded mb-2" />
+        <button onclick="addMaterial()" class="w-full bg-black text-white p-2 rounded hover:bg-gray-800 mb-2">Add</button>
+        <ul id="material-list" class="list-disc list-inside"></ul>
+      </div>
+
+      <div class="bg-gray-100 rounded-xl p-4 border border-black">
+        <h2 class="text-2xl font-semibold mb-2">Wiki Database</h2>
+        <input id="wiki-title" type="text" placeholder="Title" class="w-full p-2 border border-black rounded mb-2" />
+        <textarea id="wiki-content" placeholder="Content" class="w-full p-2 border border-black rounded mb-2"></textarea>
+        <button onclick="addWiki()" class="w-full bg-black text-white p-2 rounded hover:bg-gray-800 mb-2">Add Wiki Entry</button>
+        <ul id="wiki-list" class="list-disc list-inside"></ul>
+      </div>
+
+      <div class="bg-gray-100 rounded-xl p-4 border border-black">
+        <h2 class="text-2xl font-semibold mb-2">Upload / Download</h2>
+        <button onclick="downloadData()" class="w-full bg-black text-white p-2 rounded hover:bg-gray-800 mb-2">Download Universe</button>
+        <input type="file" onchange="uploadData(event)" class="w-full p-2 border border-black rounded mb-2" />
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- SCRIPT placed here (AFTER body is loaded) -->
+<script>
+let allObjects = [];
+let selectedIndex = 0;
+let materials = [];
+let wikiEntries = [];
+
+document.getElementById('login-button').addEventListener('click', attemptLogin);
+
+function attemptLogin() {
+  const password = document.getElementById('login-input').value;
+  if (password === "cosmophysics") {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+    regenerateUniverse();
+  } else {
+    alert("Incorrect password!");
+  }
+}
+
+const getRandom = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+
+function generateGalaxy(id) {
+  const systemsCount = getRandom(4, 8); // More solar systems
+  const galaxyCoords = { x: getRandom(-10000, 10000), y: getRandom(-10000, 10000), z: getRandom(-10000, 10000) };
+  const galaxy = { id: `GAL-${id}`, name: `Galaxy-${id}`, type: 'Galaxy', coords: {...galaxyCoords}, age: getRandom(1,13)+" billion years", size: getRandom(100000,500000)+" ly", galaxyType: ["Spiral","Elliptical","Irregular"][getRandom(0,2)], solarSystems: [], blackHoleCount: 1 };
+
+  allObjects.push({ id: `BH-${id}-SM`, name: `Supermassive Black Hole ${id}`, type: 'Black Hole', bhType: 'Supermassive', mass: `${getRandom(1000000,10000000)} M☉`, horizon: `${getRandom(10000,30000)} km`, coords: {...galaxyCoords} });
+
+  for (let b = 0; b < getRandom(2,4); b++) {
+    allObjects.push({ id: `BH-${id}-S${b}`, name: `Black Hole ${id}-${b}`, type: 'Black Hole', bhType: ['Stellar','Intermediate'][getRandom(0,1)], mass: `${getRandom(5,10000)} M☉`, horizon: `${getRandom(20,1000)} km`, coords: { x: galaxyCoords.x + getRandom(-500,500), y: galaxyCoords.y + getRandom(-500,500), z: galaxyCoords.z + getRandom(-500,500) } });
+  }
+
+  for (let i=0; i<systemsCount; i++) {
+    const solarSystem = { name: `System-${id}-${i}`, stars: [] };
+    for (let j=0; j<getRandom(1,3); j++) {
+      const star = { id: `STR-${id}-${i}-${j}`, name: `Star-${id}-${i}-${j}`, type: 'Star', coords: {...galaxyCoords}, starClass: ["G-type","M-type","K-type","F-type","A-type"][getRandom(0,4)], temperature: getRandom(3000,30000)+" K", radius: getRandom(100000,1000000)+" km", luminosity: (Math.random()*20).toFixed(2)+" L☉", age: getRandom(1,10)+" billion years", planets: [] };
+
+      for (let k=0; k<getRandom(2,10); k++) {
+        star.planets.push({ id: `PLN-${id}-${i}-${j}-${k}`, name: `Planet-${id}-${i}-${j}-${k}`, type: 'Planet', planetType: ['Lava','Ice','Ocean','Gas Giant','Habitable','Rocky'][getRandom(0,5)], atmosphere: ['Oxygen-rich','Carbon Dioxide','Methane','None'][getRandom(0,3)], surface: ['Silicate Rock','Frozen Ice','Metallic Core','Carbon Plains'][getRandom(0,3)], core: ['Iron','Silicate','Molten','Mixed'][getRandom(0,3)], orbitalPeriod: getRandom(50,1000)+" days", distanceFromStar: getRandom(10,800)+" million km", rotation: getRandom(5,100)+" hrs", size: getRandom(3000,150000)+" km", gravity: (Math.random()*15).toFixed(2)+" m/s²", temperature: getRandom(100,15000)+" K", coords: {...galaxyCoords} });
+        allObjects.push(star.planets[star.planets.length-1]);
+      }
+
+      solarSystem.stars.push(star);
+      allObjects.push(star);
+    }
+    galaxy.solarSystems.push(solarSystem);
+  }
+  allObjects.push(galaxy);
+}
+
+function generateUniverse(galaxyCount=5) {
+  allObjects = [];
+  for (let i=1; i<=galaxyCount; i++) generateGalaxy(i);
+}
+
+function renderTable() {
+  const table = document.getElementById('object-table');
+  table.innerHTML = '';
+  allObjects.forEach((obj, index) => {
+    const row = document.createElement('tr');
+    row.className = `hover:bg-gray-200 cursor-pointer ${index===selectedIndex?'highlighted':''}`;
+    row.setAttribute('data-index',index);
+    row.innerHTML = `<td class="p-2 border border-black">${obj.name}</td><td class="p-2 border border-black">${obj.type}</td><td class="p-2 border border-black">X:${obj.coords?.x??'—'} Y:${obj.coords?.y??'—'} Z:${obj.coords?.z??'—'}</td>`;
+    row.onclick = () => { selectedIndex = index; renderTable(); displayDetails(obj); };
+    table.appendChild(row);
+  });
+}
+
+function displayDetails(obj) {
+  let html = `<p><strong>Name:</strong> ${obj.name}</p><p><strong>Type:</strong> ${obj.type}</p><p><strong>Coordinates:</strong> X:${obj.coords?.x} Y:${obj.coords?.y} Z:${obj.coords?.z}</p>`;
+  if (obj.type==='Galaxy') html += `<p><strong>Solar Systems:</strong> ${obj.solarSystems.length}</p><p><strong>Galaxy Type:</strong> ${obj.galaxyType}</p><p><strong>Size:</strong> ${obj.size}</p><p><strong>Age:</strong> ${obj.age}</p>`;
+  if (obj.type==='Star') html += `<p><strong>Star Class:</strong> ${obj.starClass}</p><p><strong>Temperature:</strong> ${obj.temperature}</p><p><strong>Radius:</strong> ${obj.radius}</p><p><strong>Luminosity:</strong> ${obj.luminosity}</p>`;
+  if (obj.type==='Planet') html += `<p><strong>Planet Type:</strong> ${obj.planetType}</p><p><strong>Surface:</strong> ${obj.surface}</p><p><strong>Core:</strong> ${obj.core}</p><p><strong>Gravity:</strong> ${obj.gravity}</p><p><strong>Temperature:</strong> ${obj.temperature}</p>`;
+  if (obj.type==='Black Hole') html += `<p><strong>Black Hole Type:</strong> ${obj.bhType}</p><p><strong>Mass:</strong> ${obj.mass}</p><p><strong>Horizon:</strong> ${obj.horizon}</p>`;
+  document.getElementById('detail-view').innerHTML = html;
+}
+
+function regenerateUniverse() {
+  generateUniverse();
+  selectedIndex = 0;
+  renderTable();
+  document.getElementById('detail-view').innerHTML = 'Use arrow keys or mouse to explore objects.';
+}
+
+// Database
+function addMaterial() {
+  const material = document.getElementById('material-input').value;
+  if (material) { materials.push(material); document.getElementById('material-input').value = ''; renderMaterials(); }
+}
+function renderMaterials() {
+  document.getElementById('material-list').innerHTML = materials.map(m=>`<li>${m}</li>`).join('');
+}
+function addWiki() {
+  const title = document.getElementById('wiki-title').value;
+  const content = document.getElementById('wiki-content').value;
+  if (title && content) { wikiEntries.push({title, content}); document.getElementById('wiki-title').value=''; document.getElementById('wiki-content').value=''; renderWiki(); }
+}
+function renderWiki() {
+  document.getElementById('wiki-list').innerHTML = wikiEntries.map(w=>`<li><strong>${w.title}</strong>: ${w.content}</li>`).join('');
+}
+
+// File upload/download
+function downloadData() {
+  const blob = new Blob([JSON.stringify({objects:allObjects,materials,wikiEntries},null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'universe.json';
+  a.click();
+}
+function uploadData(event) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const data = JSON.parse(e.target.result);
+    allObjects = data.objects||[];
+    materials = data.materials||[];
+    wikiEntries = data.wikiEntries||[];
+    renderTable();
+    renderMaterials();
+    renderWiki();
+  };
+  reader.readAsText(event.target.files[0]);
+}
+
+// Controls
+document.addEventListener('keydown',(e)=>{
+  if (e.key==='ArrowDown') { selectedIndex=(selectedIndex+1)%allObjects.length; renderTable(); }
+  if (e.key==='ArrowUp') { selectedIndex=(selectedIndex-1+allObjects.length)%allObjects.length; renderTable(); }
+  if (e.key==='Enter') displayDetails(allObjects[selectedIndex]);
+  if (e.key && e.key.toLowerCase()==='r') regenerateUniverse();
+});
+</script>
+
+</body>
+</html>
