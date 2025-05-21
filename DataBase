@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cosmophysical Theorist Database</title>
+  <title> Space.inc Database</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     ::-webkit-scrollbar { width: 6px; }
@@ -14,11 +14,13 @@
 
 <body class="font-sans">
 <!-- Login Screen -->
-<div id="login-screen" class="flex items-center justify-center h-screen">
+<div id="loginScreen" class="flex items-center justify-center h-screen">
   <div class="bg-gray-100 p-8 rounded-xl border border-black shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-bold mb-6 text-center">Cosmophysical Theorist Login</h2>
-    <input id="login-input" type="password" placeholder="Enter Password" class="w-full p-2 border border-black rounded mb-4" />
-    <button id="login-button" class="w-full bg-black text-white p-2 rounded hover:bg-gray-800">Login</button>
+    <h2 class="text-2xl font-bold mb-6 text-center"> Space.Inc Database Login</h2>
+    <input id="loginUsername" type="text" placeholder="Username" class="w-full p-2 border border-black rounded mb-4" />
+    <input id="loginPassword" type="password" placeholder="Password" class="w-full p-2 border border-black rounded mb-4" />
+    <button onclick="login()" class="w-full bg-black text-white p-2 rounded hover:bg-gray-800 mb-2">Login</button>
+    <button onclick="register()" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Register</button>
   </div>
 </div>
 
@@ -85,26 +87,73 @@ let allObjects = [];
 let selectedIndex = 0;
 let materials = [];
 let wikiEntries = [];
+const drafts = [];
+const sentEmails = [];
 
-document.getElementById('login-button').addEventListener('click', attemptLogin);
+// Login System
+function login() {
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  const savedPassword = localStorage.getItem('user_' + username);
 
-function attemptLogin() {
-  const password = document.getElementById('login-input').value;
-  if (password === "cosmophysics") {
-    document.getElementById('login-screen').classList.add('hidden');
+  if (savedPassword && savedPassword === password) {
+    document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('main-app').classList.remove('hidden');
-    regenerateUniverse();
+    loadProgress(username);
+    alert('Login successful!');
   } else {
-    alert("Incorrect password!");
+    alert('Incorrect username or password.');
   }
 }
 
+function register() {
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+
+  if (!username || !password) {
+    alert('Please enter a username and password.');
+    return;
+  }
+
+  if (localStorage.getItem('user_' + username)) {
+    alert('Username already exists.');
+    return;
+  }
+
+  localStorage.setItem('user_' + username, password);
+  localStorage.setItem('drafts_' + username, JSON.stringify([]));
+  localStorage.setItem('sent_' + username, JSON.stringify([]));
+  alert('Registered successfully! Now you can log in.');
+}
+
+function saveProgress(username) {
+  localStorage.setItem('drafts_' + username, JSON.stringify(drafts));
+  localStorage.setItem('sent_' + username, JSON.stringify(sentEmails));
+}
+
+function loadProgress(username) {
+  const savedDrafts = localStorage.getItem('drafts_' + username);
+  const savedSent = localStorage.getItem('sent_' + username);
+  
+  if (savedDrafts) drafts.push(...JSON.parse(savedDrafts));
+  if (savedSent) sentEmails.push(...JSON.parse(savedSent));
+
+  updateDraftList();
+  updateSentList();
+
+  // Auto-save every 10 seconds
+  setInterval(() => {
+    saveProgress(username);
+  }, 10000);
+}
+
+// Universe Generation
 const getRandom = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
 function generateGalaxy(id) {
   const systemsCount = getRandom(4, 8); // More solar systems
   const galaxyCoords = { x: getRandom(-10000, 10000), y: getRandom(-10000, 10000), z: getRandom(-10000, 10000) };
-  const galaxy = { id: `GAL-${id}`, name: `Galaxy-${id}`, type: 'Galaxy', coords: {...galaxyCoords}, age: getRandom(1,13)+" billion years", size: getRandom(100000,500000)+" ly", galaxyType: ["Spiral","Elliptical","Irregular"][getRandom(0,2)], solarSystems: [], blackHoleCount: 1 };
+  const galaxy = { id: `GAL-${id}`, name: `Galaxy-${id}`, type: 'Galaxy', coords: {...galaxyCoords}, age: `${getRandom(1,13)} billion years`, size: `${getRandom(100000,500000)} ly`, galaxyType: ["Spiral","Elliptical","Irregular"][getRandom(0,2)], solarSystems: [], blackHoleCount: 1 };
 
   allObjects.push({ id: `BH-${id}-SM`, name: `Supermassive Black Hole ${id}`, type: 'Black Hole', bhType: 'Supermassive', mass: `${getRandom(1000000,10000000)} M☉`, horizon: `${getRandom(10000,30000)} km`, coords: {...galaxyCoords} });
 
@@ -115,10 +164,10 @@ function generateGalaxy(id) {
   for (let i=0; i<systemsCount; i++) {
     const solarSystem = { name: `System-${id}-${i}`, stars: [] };
     for (let j=0; j<getRandom(1,3); j++) {
-      const star = { id: `STR-${id}-${i}-${j}`, name: `Star-${id}-${i}-${j}`, type: 'Star', coords: {...galaxyCoords}, starClass: ["G-type","M-type","K-type","F-type","A-type"][getRandom(0,4)], temperature: getRandom(3000,30000)+" K", radius: getRandom(100000,1000000)+" km", luminosity: (Math.random()*20).toFixed(2)+" L☉", age: getRandom(1,10)+" billion years", planets: [] };
+      const star = { id: `STR-${id}-${i}-${j}`, name: `Star-${id}-${i}-${j}`, type: 'Star', coords: {...galaxyCoords}, starClass: ["G-type","M-type","K-type","F-type","A-type"][getRandom(0,4)], temperature: `${getRandom(3000,30000)} K`, radius: `${getRandom(100000,1000000)} km`, luminosity: `${(Math.random()*20).toFixed(2)} L☉`, age: `${getRandom(1,10)} billion years`, planets: [] };
 
       for (let k=0; k<getRandom(2,10); k++) {
-        star.planets.push({ id: `PLN-${id}-${i}-${j}-${k}`, name: `Planet-${id}-${i}-${j}-${k}`, type: 'Planet', planetType: ['Lava','Ice','Ocean','Gas Giant','Habitable','Rocky'][getRandom(0,5)], atmosphere: ['Oxygen-rich','Carbon Dioxide','Methane','None'][getRandom(0,3)], surface: ['Silicate Rock','Frozen Ice','Metallic Core','Carbon Plains'][getRandom(0,3)], core: ['Iron','Silicate','Molten','Mixed'][getRandom(0,3)], orbitalPeriod: getRandom(50,1000)+" days", distanceFromStar: getRandom(10,800)+" million km", rotation: getRandom(5,100)+" hrs", size: getRandom(3000,150000)+" km", gravity: (Math.random()*15).toFixed(2)+" m/s²", temperature: getRandom(100,15000)+" K", coords: {...galaxyCoords} });
+        star.planets.push({ id: `PLN-${id}-${i}-${j}-${k}`, name: `Planet-${id}-${i}-${j}-${k}`, type: 'Planet', planetType: ['Lava','Ice','Ocean','Gas Giant','Habitable','Rocky'][getRandom(0,5)], atmosphere: ['Oxygen-rich','Carbon Dioxide','Methane','None'][getRandom(0,3)], surface: ['Silicate Rock','Frozen Ice','Metallic Core','Carbon Plains'][getRandom(0,3)], core: ['Iron','Silicate','Molten','Mixed'][getRandom(0,3)], orbitalPeriod: `${getRandom(50,1000)} days`, distanceFromStar: `${getRandom(10,800)} million km`, rotation: `${getRandom(5,100)} hrs`, size: `${getRandom(3000,150000)} km`, gravity: `${(Math.random()*15).toFixed(2)} m/s²`, temperature: `${getRandom(100,15000)} K`, coords: {...galaxyCoords} });
         allObjects.push(star.planets[star.planets.length-1]);
       }
 
@@ -164,38 +213,42 @@ function regenerateUniverse() {
   document.getElementById('detail-view').innerHTML = 'Use arrow keys or mouse to explore objects.';
 }
 
-// Database
+// Database functions
 function addMaterial() {
   const material = document.getElementById('material-input').value;
   if (material) { materials.push(material); document.getElementById('material-input').value = ''; renderMaterials(); }
 }
+
 function renderMaterials() {
-  document.getElementById('material-list').innerHTML = materials.map(m=>`<li>${m}</li>`).join('');
+  document.getElementById('material-list').innerHTML = materials.map(m => `<li>${m}</li>`).join('');
 }
+
 function addWiki() {
   const title = document.getElementById('wiki-title').value;
   const content = document.getElementById('wiki-content').value;
   if (title && content) { wikiEntries.push({title, content}); document.getElementById('wiki-title').value=''; document.getElementById('wiki-content').value=''; renderWiki(); }
 }
+
 function renderWiki() {
-  document.getElementById('wiki-list').innerHTML = wikiEntries.map(w=>`<li><strong>${w.title}</strong>: ${w.content}</li>`).join('');
+  document.getElementById('wiki-list').innerHTML = wikiEntries.map(w => `<li><strong>${w.title}</strong>: ${w.content}</li>`).join('');
 }
 
-// File upload/download
+// File upload/download functions
 function downloadData() {
-  const blob = new Blob([JSON.stringify({objects:allObjects,materials,wikiEntries},null,2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({objects: allObjects, materials, wikiEntries}, null, 2)], {type: 'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'universe.json';
   a.click();
 }
+
 function uploadData(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const data = JSON.parse(e.target.result);
-    allObjects = data.objects||[];
-    materials = data.materials||[];
-    wikiEntries = data.wikiEntries||[];
+    allObjects = data.objects || [];
+    materials = data.materials || [];
+    wikiEntries = data.wikiEntries || [];
     renderTable();
     renderMaterials();
     renderWiki();
@@ -204,11 +257,11 @@ function uploadData(event) {
 }
 
 // Controls
-document.addEventListener('keydown',(e)=>{
-  if (e.key==='ArrowDown') { selectedIndex=(selectedIndex+1)%allObjects.length; renderTable(); }
-  if (e.key==='ArrowUp') { selectedIndex=(selectedIndex-1+allObjects.length)%allObjects.length; renderTable(); }
-  if (e.key==='Enter') displayDetails(allObjects[selectedIndex]);
-  if (e.key && e.key.toLowerCase()==='r') regenerateUniverse();
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') { selectedIndex = (selectedIndex + 1) % allObjects.length; renderTable(); }
+  if (e.key === 'ArrowUp') { selectedIndex = (selectedIndex - 1 + allObjects.length) % allObjects.length; renderTable(); }
+  if (e.key === 'Enter') displayDetails(allObjects[selectedIndex]);
+  if (e.key && e.key.toLowerCase() === 'r') regenerateUniverse();
 });
 </script>
 
